@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Write"
+    ]
+  },
+  "settings": {
+    "contextFiles": [
+      "CLAUDE.md"
+    ]
+  }
+}

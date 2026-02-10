@@ -1,3 +1,19 @@
+<<<<<<< HEAD
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/app/build
+/app/release
+*.apk
+*.aab
+=======
 # Compiled class file
 *.class
 
@@ -25,3 +41,4 @@ replay_pid*
 
 # Kotlin Gradle plugin data, see https://kotlinlang.org/docs/whatsnew20.html#new-directory-for-kotlin-data-in-gradle-projects
 .kotlin/
+>>>>>>> 33733da3a1238d7f2818b2f0ac2cea0bb37978a5
