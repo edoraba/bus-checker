@@ -30,8 +30,8 @@
             </intent-filter>
         </activity>
 
-        <!-- Widget receiver - TODO: implement -->
-        <!-- <receiver
+        <!-- Widget receiver -->
+        <receiver
             android:name=".widget.BusWidgetReceiver"
             android:exported="true">
             <intent-filter>
@@ -40,7 +40,7 @@
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/bus_widget_info" />
-        </receiver> -->
+        </receiver>
 
         <!-- FileProvider for auto-update APK install -->
         <provider

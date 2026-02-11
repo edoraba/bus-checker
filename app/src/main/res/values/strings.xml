@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">BusPullman</string>
+    <string name="widget_description">Prossimi pullman GTT</string>
 </resources>
