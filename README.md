@@ -66,6 +66,43 @@ bash release.sh 1.0.3
 - WorkManager per il refresh periodico
 - SpeechRecognizer + TextToSpeech nativi Android
 
+## Sviluppo
+
+### Formato risposta API
+```json
+[
+  {"line": "15", "hour": "21:07:53", "realtime": true},
+  {"line": "68", "hour": "21:08:20", "realtime": false}
+]
+```
+- `hour`: orario passaggio (HH:mm:ss, timezone locale Italia)
+- `realtime`: `true` = dato GPS, `false` = orario programmato
+
+### Struttura package
+```
+com.redergo.buspullman/
+├── MainActivity.kt          # Entry point, TTS, STT, permessi
+├── data/
+│   ├── BusModels.kt         # Data classes + BusConfig
+│   ├── BusApiService.kt     # Retrofit interface
+│   └── BusRepository.kt     # Logica fetch + calcolo minuti
+├── ui/
+│   ├── BusScreen.kt         # UI Compose principale
+│   ├── BusViewModel.kt      # StateFlow, auto-refresh, filtri
+│   └── theme/Theme.kt       # Tema Material 3
+├── widget/
+│   ├── BusWidget.kt         # Widget Glance + receiver
+│   └── BusWidgetWorker.kt   # WorkManager refresh periodico
+└── service/
+    └── UpdateManager.kt     # Auto-update da GitHub Releases
+```
+
+### Note
+- L'API filtra solo le linee monitorate (15, 68, 61), le altre vengono ignorate
+- Calcolo minuti: gestisce cambio giorno (es. 23:50 → 00:10 = 20 min)
+- Auto-refresh ogni 30s in foreground, widget ogni 15 min
+- Nessuna API a pagamento: TTS e STT sono nativi Android
+
 ## Licenza
 
 Uso privato.

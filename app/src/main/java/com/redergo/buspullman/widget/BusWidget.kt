@@ -2,6 +2,7 @@ package com.redergo.buspullman.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.ColorFilter
@@ -25,12 +26,30 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.redergo.buspullman.MainActivity
 import com.redergo.buspullman.R
 import com.redergo.buspullman.data.BusInfo
 import com.redergo.buspullman.data.BusRepository
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
+
+// Colori per linea nel widget
+private object LineColors {
+    val text = mapOf(
+        "15" to ColorProvider(Color(0xFF1565C0)),
+        "68" to ColorProvider(Color(0xFFC62828)),
+        "61" to ColorProvider(Color(0xFF2E7D32))
+    )
+    val defaultText = ColorProvider(Color(0xFF757575))
+
+    val chipBg = mapOf(
+        "15" to ColorProvider(Color(0x301565C0)),
+        "68" to ColorProvider(Color(0x30C62828)),
+        "61" to ColorProvider(Color(0x302E7D32))
+    )
+    val defaultChipBg = ColorProvider(Color(0x30757575))
+}
 
 class BusWidget : GlanceAppWidget() {
 
@@ -56,6 +75,7 @@ class BusWidget : GlanceAppWidget() {
             modifier = GlanceModifier
                 .fillMaxSize()
                 .padding(6.dp)
+                .cornerRadius(16.dp)
                 .background(GlanceTheme.colors.background)
                 .clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -80,7 +100,6 @@ class BusWidget : GlanceAppWidget() {
             Column(
                 horizontalAlignment = Alignment.Horizontal.CenterHorizontally
             ) {
-                // Bottone refresh
                 Box(
                     modifier = GlanceModifier
                         .size(32.dp)
@@ -111,8 +130,8 @@ class BusWidget : GlanceAppWidget() {
     private fun WidgetBusChip(bus: BusInfo) {
         Column(
             modifier = GlanceModifier
-                .cornerRadius(8.dp)
-                .background(GlanceTheme.colors.secondaryContainer)
+                .cornerRadius(10.dp)
+                .background(LineColors.chipBg[bus.line] ?: LineColors.defaultChipBg)
                 .padding(horizontal = 10.dp, vertical = 4.dp),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
@@ -122,7 +141,7 @@ class BusWidget : GlanceAppWidget() {
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     textAlign = TextAlign.Center,
-                    color = GlanceTheme.colors.onSecondaryContainer
+                    color = LineColors.text[bus.line] ?: LineColors.defaultText
                 )
             )
             Text(
@@ -131,9 +150,10 @@ class BusWidget : GlanceAppWidget() {
                     else -> "${bus.minutesUntilArrival}'"
                 },
                 style = TextStyle(
-                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
                     textAlign = TextAlign.Center,
-                    color = GlanceTheme.colors.onSecondaryContainer
+                    color = GlanceTheme.colors.onBackground
                 )
             )
         }

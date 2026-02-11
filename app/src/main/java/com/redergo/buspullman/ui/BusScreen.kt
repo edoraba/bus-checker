@@ -11,7 +11,7 @@ import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.VolumeUp
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -259,7 +259,7 @@ fun BusScreen(
                                         .fillMaxWidth()
                                         .padding(horizontal = 16.dp)
                                 ) {
-                                    Icon(Icons.Default.VolumeUp, contentDescription = null)
+                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
                                     Spacer(Modifier.width(8.dp))
                                     Text("Leggi orari")
                                 }
