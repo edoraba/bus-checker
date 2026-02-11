@@ -8,6 +8,15 @@ android {
     namespace = "com.redergo.buspullman"
     compileSdk = 34
 
+    signingConfigs {
+        create("release") {
+            storeFile = file("release-keystore.jks")
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "buspullman2026"
+            keyAlias = "buspullman"
+            keyPassword = System.getenv("KEY_PASSWORD") ?: "buspullman2026"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.redergo.buspullman"
         minSdk = 26
@@ -25,6 +34,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
