@@ -1,10 +1,13 @@
 package com.redergo.buspullman.ui
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DirectionsBus
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Refresh
@@ -13,14 +16,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.redergo.buspullman.BuildConfig
 import com.redergo.buspullman.data.BusInfo
 import com.redergo.buspullman.data.BusUiState
 import com.redergo.buspullman.service.UpdateManager
+
+// Colori per linea
+private val lineColors = mapOf(
+    "15" to Color(0xFF1E88E5),  // Blu
+    "68" to Color(0xFFE53935),  // Rosso
+    "61" to Color(0xFF43A047)   // Verde
+)
+
+private fun getLineColor(line: String): Color =
+    lineColors[line] ?: Color(0xFF757575)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +52,6 @@ fun BusScreen(
     val shouldSpeak by viewModel.shouldSpeak.collectAsStateWithLifecycle()
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
 
-    // Filtra bus in base al filtro vocale
     val displayedBuses = when (val state = uiState) {
         is BusUiState.Success -> {
             val filter = voiceFilter.requestedLine
@@ -49,7 +64,6 @@ fun BusScreen(
         else -> emptyList()
     }
 
-    // TTS trigger
     LaunchedEffect(shouldSpeak) {
         if (shouldSpeak && uiState is BusUiState.Success) {
             val text = buildTtsText(displayedBuses, voiceFilter.requestedLine)
@@ -58,12 +72,41 @@ fun BusScreen(
         }
     }
 
+    val fabColor by animateColorAsState(
+        targetValue = if (isListening)
+            MaterialTheme.colorScheme.error
+        else
+            MaterialTheme.colorScheme.primary,
+        label = "fab_color"
+    )
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
                     Column {
-                        Text("BusPullman", fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.DirectionsBus,
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text("BusPullman", fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(8.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                            ) {
+                                Text(
+                                    text = "v${BuildConfig.VERSION_NAME}",
+                                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
                         if (uiState is BusUiState.Success) {
                             Text(
                                 "Aggiornato alle ${(uiState as BusUiState.Success).lastUpdate}",
@@ -79,30 +122,26 @@ fun BusScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
         floatingActionButton = {
             LargeFloatingActionButton(
                 onClick = onMicClick,
-                containerColor = if (isListening)
-                    MaterialTheme.colorScheme.error
-                else
-                    MaterialTheme.colorScheme.primaryContainer
+                shape = CircleShape,
+                containerColor = fabColor
             ) {
                 Icon(
                     imageVector = if (isListening) Icons.Default.MicOff else Icons.Default.Mic,
                     contentDescription = "Microfono",
                     modifier = Modifier.size(36.dp),
-                    tint = if (isListening)
-                        MaterialTheme.colorScheme.onError
-                    else
-                        MaterialTheme.colorScheme.onPrimaryContainer
+                    tint = Color.White
                 )
             }
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Box(
             modifier = Modifier
@@ -116,9 +155,15 @@ fun BusScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            CircularProgressIndicator()
+                            CircularProgressIndicator(
+                                color = MaterialTheme.colorScheme.primary,
+                                strokeWidth = 3.dp
+                            )
                             Spacer(Modifier.height(16.dp))
-                            Text("Caricamento orari...")
+                            Text(
+                                "Caricamento orari...",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
                     }
                 }
@@ -205,7 +250,7 @@ fun BusScreen(
                         if (displayedBuses.isNotEmpty()) {
                             item(key = "speak_button") {
                                 Spacer(Modifier.height(8.dp))
-                                Button(
+                                FilledTonalButton(
                                     onClick = { viewModel.requestSpeak() },
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -229,29 +274,38 @@ fun BusScreen(
 
 @Composable
 fun BusArrivalCard(busInfo: BusInfo) {
+    val lineColor = getLineColor(busInfo.line)
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .shadow(
+                elevation = 2.dp,
+                shape = RoundedCornerShape(16.dp),
+                ambientColor = lineColor.copy(alpha = 0.1f),
+                spotColor = lineColor.copy(alpha = 0.15f)
+            ),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Numero linea in cerchio
+            // Numero linea in cerchio colorato
             Surface(
                 shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
+                color = lineColor,
                 modifier = Modifier.size(56.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = busInfo.line,
                         style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -267,7 +321,11 @@ fun BusArrivalCard(busInfo: BusInfo) {
                         else -> "${busInfo.minutesUntilArrival} minuti"
                     },
                     style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp),
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = if (busInfo.minutesUntilArrival <= 2)
+                        lineColor
+                    else
+                        MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "Previsto alle ${busInfo.scheduledTime.substringBeforeLast(":")}",
@@ -276,9 +334,9 @@ fun BusArrivalCard(busInfo: BusInfo) {
                 )
             }
 
-            // Indicatore realtime
+            // Badge GPS / Orario
             Surface(
-                shape = MaterialTheme.shapes.small,
+                shape = RoundedCornerShape(6.dp),
                 color = if (busInfo.isRealtime)
                     MaterialTheme.colorScheme.tertiary
                 else
@@ -289,7 +347,7 @@ fun BusArrivalCard(busInfo: BusInfo) {
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (busInfo.isRealtime)
-                        MaterialTheme.colorScheme.onTertiary
+                        Color.White
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Bold
@@ -301,20 +359,42 @@ fun BusArrivalCard(busInfo: BusInfo) {
 
 @Composable
 fun FilterChipBar(line: String, onClear: () -> Unit) {
-    Row(
+    val lineColor = getLineColor(line)
+    Surface(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically
+        shape = RoundedCornerShape(8.dp),
+        color = lineColor.copy(alpha = 0.1f)
     ) {
-        Text(
-            text = "Filtro: Linea $line",
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(Modifier.weight(1f))
-        TextButton(onClick = onClear) {
-            Text("Mostra tutte")
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = lineColor,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text(
+                        text = line,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Solo linea $line",
+                style = MaterialTheme.typography.labelLarge,
+                color = lineColor,
+                modifier = Modifier.weight(1f)
+            )
+            TextButton(onClick = onClear) {
+                Text("Mostra tutte")
+            }
         }
     }
 }
@@ -329,6 +409,7 @@ fun UpdateBanner(
         modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         )
@@ -365,9 +446,6 @@ fun UpdateBanner(
     }
 }
 
-/**
- * Genera il testo da leggere tramite TTS.
- */
 fun buildTtsText(buses: List<BusInfo>, requestedLine: String?): String {
     if (buses.isEmpty()) {
         return if (requestedLine != null) {

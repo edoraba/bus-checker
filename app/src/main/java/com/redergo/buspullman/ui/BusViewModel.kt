@@ -7,6 +7,8 @@ import com.redergo.buspullman.data.BusRepository
 import com.redergo.buspullman.data.BusUiState
 import com.redergo.buspullman.data.VoiceFilter
 import com.redergo.buspullman.service.UpdateManager
+import com.redergo.buspullman.widget.BusWidget
+import androidx.glance.appwidget.updateAll
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -41,10 +43,15 @@ class BusViewModel : ViewModel() {
 
     private var autoRefreshJob: Job? = null
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+    private var appContext: Context? = null
 
     init {
         loadBusData()
         startAutoRefresh()
+    }
+
+    fun setContext(context: Context) {
+        appContext = context.applicationContext
     }
 
     fun loadBusData() {
@@ -56,6 +63,8 @@ class BusViewModel : ViewModel() {
                     buses = buses,
                     lastUpdate = LocalTime.now().format(timeFormatter)
                 )
+                // Aggiorna anche il widget
+                appContext?.let { BusWidget().updateAll(it) }
             } catch (e: Exception) {
                 _uiState.value = BusUiState.Error(
                     message = "Errore di connessione: ${e.localizedMessage}"

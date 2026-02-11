@@ -4,9 +4,12 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.Image
+import androidx.glance.ImageProvider
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
@@ -14,13 +17,16 @@ import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
 import androidx.glance.layout.*
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
+import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import com.redergo.buspullman.MainActivity
+import com.redergo.buspullman.R
 import com.redergo.buspullman.data.BusInfo
 import com.redergo.buspullman.data.BusRepository
 
@@ -46,7 +52,7 @@ class BusWidget : GlanceAppWidget() {
         Row(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(8.dp)
+                .padding(6.dp)
                 .background(GlanceTheme.colors.background)
                 .clickable(actionStartActivity<MainActivity>()),
             verticalAlignment = Alignment.Vertical.CenterVertically
@@ -57,26 +63,52 @@ class BusWidget : GlanceAppWidget() {
                     style = TextStyle(
                         fontSize = 13.sp,
                         color = GlanceTheme.colors.onBackground
-                    )
+                    ),
+                    modifier = GlanceModifier.defaultWeight()
                 )
             } else {
                 buses.forEach { bus ->
                     WidgetBusChip(bus)
-                    Spacer(modifier = GlanceModifier.width(6.dp))
+                    Spacer(modifier = GlanceModifier.width(4.dp))
                 }
+                Spacer(modifier = GlanceModifier.defaultWeight())
+            }
+
+            // Bottone refresh
+            Box(
+                modifier = GlanceModifier
+                    .size(32.dp)
+                    .cornerRadius(16.dp)
+                    .background(GlanceTheme.colors.primaryContainer)
+                    .clickable(actionRunCallback<RefreshWidgetAction>()),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    provider = ImageProvider(R.drawable.ic_refresh),
+                    contentDescription = "Aggiorna",
+                    modifier = GlanceModifier.size(18.dp),
+                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
+                )
             }
         }
     }
 
     @Composable
     private fun WidgetBusChip(bus: BusInfo) {
-        Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
+        Column(
+            modifier = GlanceModifier
+                .cornerRadius(8.dp)
+                .background(GlanceTheme.colors.secondaryContainer)
+                .padding(horizontal = 10.dp, vertical = 4.dp),
+            horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+        ) {
             Text(
                 text = bus.line,
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
-                    color = GlanceTheme.colors.onBackground
+                    textAlign = TextAlign.Center,
+                    color = GlanceTheme.colors.onSecondaryContainer
                 )
             )
             Text(
@@ -85,8 +117,9 @@ class BusWidget : GlanceAppWidget() {
                     else -> "${bus.minutesUntilArrival}'"
                 },
                 style = TextStyle(
-                    fontSize = 14.sp,
-                    color = GlanceTheme.colors.onBackground
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    color = GlanceTheme.colors.onSecondaryContainer
                 )
             )
         }

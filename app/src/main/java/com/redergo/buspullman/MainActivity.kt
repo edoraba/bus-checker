@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         busViewModel = ViewModelProvider(this)[BusViewModel::class.java]
+        busViewModel.setContext(this)
 
         // Inizializza TTS
         tts = TextToSpeech(this) { status ->
