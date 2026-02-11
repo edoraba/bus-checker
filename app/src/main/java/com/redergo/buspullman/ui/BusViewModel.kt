@@ -1,7 +1,7 @@
 package com.redergo.buspullman.ui
 
-import android.content.Context
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.redergo.buspullman.data.BusRepository
 import com.redergo.buspullman.data.BusUiState
@@ -19,9 +19,11 @@ import java.net.UnknownHostException
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
-class BusViewModel : ViewModel() {
+class BusViewModel(application: Application) : AndroidViewModel(application) {
 
+    private val appContext = application.applicationContext
     private val repository = BusRepository()
+    private val updateManager = UpdateManager(appContext)
 
     private val _uiState = MutableStateFlow<BusUiState>(BusUiState.Loading)
     val uiState: StateFlow<BusUiState> = _uiState.asStateFlow()
@@ -44,17 +46,13 @@ class BusViewModel : ViewModel() {
 
     private var autoRefreshJob: Job? = null
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    private var appContext: Context? = null
 
     init {
         loadBusData()
     }
 
-    fun setContext(context: Context) {
-        appContext = context.applicationContext
-    }
-
     fun loadBusData() {
+        if (_isRefreshing.value) return // Deduplicazione: ignora se già in corso
         viewModelScope.launch {
             try {
                 _isRefreshing.value = true
@@ -64,17 +62,23 @@ class BusViewModel : ViewModel() {
                     lastUpdate = LocalTime.now().format(timeFormatter)
                 )
                 // Aggiorna anche il widget
-                appContext?.let { BusWidget().updateAll(it) }
+                BusWidget().updateAll(appContext)
             } catch (e: Exception) {
-                val message = when {
-                    e is UnknownHostException || e is java.net.ConnectException ->
-                        "Nessuna connessione internet"
-                    e is java.net.SocketTimeoutException ->
-                        "Il server non risponde"
-                    else ->
-                        "Errore di connessione: ${e.localizedMessage}"
+                val current = _uiState.value
+                if (current is BusUiState.Success) {
+                    // Stale-while-revalidate: mantieni dati vecchi, segnala offline
+                    _uiState.value = current.copy(isOffline = true)
+                } else {
+                    val message = when {
+                        e is UnknownHostException || e is java.net.ConnectException ->
+                            "Nessuna connessione internet"
+                        e is java.net.SocketTimeoutException ->
+                            "Il server non risponde"
+                        else ->
+                            "Errore di connessione: ${e.localizedMessage}"
+                    }
+                    _uiState.value = BusUiState.Error(message = message)
                 }
-                _uiState.value = BusUiState.Error(message = message)
             } finally {
                 _isRefreshing.value = false
             }
@@ -102,10 +106,11 @@ class BusViewModel : ViewModel() {
         _isListening.value = listening
     }
 
-    fun checkForUpdate(context: Context) {
+    fun checkForUpdate() {
+        // Non ri-checkare se il banner è già visibile
+        if (_updateInfo.value != null) return
         viewModelScope.launch {
-            val manager = UpdateManager(context)
-            _updateInfo.value = manager.checkForUpdate()
+            _updateInfo.value = updateManager.checkForUpdate()
         }
     }
 
@@ -115,6 +120,8 @@ class BusViewModel : ViewModel() {
 
     // Lifecycle-aware: chiama da onResume
     fun startAutoRefresh() {
+        // Ri-controlla aggiornamenti ad ogni resume
+        checkForUpdate()
         autoRefreshJob?.cancel()
         autoRefreshJob = viewModelScope.launch {
             while (true) {

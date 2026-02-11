@@ -53,7 +53,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         busViewModel = ViewModelProvider(this)[BusViewModel::class.java]
-        busViewModel.setContext(this)
 
         // Inizializza TTS
         tts = TextToSpeech(this) { status ->
@@ -67,7 +66,7 @@ class MainActivity : ComponentActivity() {
         }
 
         // Check aggiornamenti + pulizia vecchi APK
-        busViewModel.checkForUpdate(this)
+        busViewModel.checkForUpdate()
         UpdateManager.cleanOldApks()
 
         // Avvia refresh periodico widget

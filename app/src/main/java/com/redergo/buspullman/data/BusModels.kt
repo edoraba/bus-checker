@@ -51,7 +51,8 @@ sealed interface BusUiState {
     data object Loading : BusUiState
     data class Success(
         val buses: List<BusInfo>,
-        val lastUpdate: String
+        val lastUpdate: String,
+        val isOffline: Boolean = false
     ) : BusUiState
     data class Error(val message: String) : BusUiState
 }

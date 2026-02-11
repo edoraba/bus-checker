@@ -1,9 +1,12 @@
 package com.redergo.buspullman.ui
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -13,6 +16,7 @@ import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -48,6 +52,7 @@ fun BusScreen(
     onDownloadUpdate: (UpdateManager.UpdateInfo) -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val voiceFilter by viewModel.voiceFilter.collectAsStateWithLifecycle()
     val shouldSpeak by viewModel.shouldSpeak.collectAsStateWithLifecycle()
     val updateInfo by viewModel.updateInfo.collectAsStateWithLifecycle()
@@ -191,83 +196,118 @@ fun BusScreen(
                 }
 
                 is BusUiState.Success -> {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(vertical = 8.dp)
+                    PullToRefreshBox(
+                        isRefreshing = isRefreshing,
+                        onRefresh = { viewModel.onPullToRefresh() }
                     ) {
-                        // Banner aggiornamento
-                        val update = updateInfo
-                        if (update != null) {
-                            item(key = "update_banner") {
-                                UpdateBanner(
-                                    info = update,
-                                    onUpdate = { onDownloadUpdate(update) },
-                                    onDismiss = { viewModel.dismissUpdate() }
-                                )
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(vertical = 8.dp)
+                        ) {
+                            // Banner offline
+                            if (state.isOffline) {
+                                item(key = "offline_banner") {
+                                    Surface(
+                                        color = MaterialTheme.colorScheme.errorContainer,
+                                        shape = RoundedCornerShape(8.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 12.dp, vertical = 4.dp)
+                                    ) {
+                                        Text(
+                                            text = "Offline \u2014 ultimo aggiornamento: ${state.lastUpdate}",
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onErrorContainer
+                                        )
+                                    }
+                                }
                             }
-                        }
 
-                        // Filtro vocale attivo
-                        val filterLine = voiceFilter.requestedLine
-                        if (filterLine != null) {
-                            item(key = "filter_bar") {
-                                FilterChipBar(
-                                    line = filterLine,
-                                    onClear = { viewModel.setVoiceFilter(null) }
-                                )
-                            }
-                        }
-
-                        if (displayedBuses.isEmpty()) {
-                            item(key = "empty") {
-                                val hour = java.time.LocalTime.now().hour
-                                val isNight = hour in 0..4 || hour >= 23
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(48.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Text(
-                                        text = when {
-                                            filterLine != null -> "Nessun passaggio previsto per il $filterLine"
-                                            isNight -> "Servizio terminato\nRiprova domani mattina"
-                                            else -> "Nessun passaggio previsto"
-                                        },
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        textAlign = TextAlign.Center,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                            // Banner aggiornamento
+                            val update = updateInfo
+                            if (update != null) {
+                                item(key = "update_banner") {
+                                    UpdateBanner(
+                                        info = update,
+                                        onUpdate = { onDownloadUpdate(update) },
+                                        onDismiss = { viewModel.dismissUpdate() }
                                     )
                                 }
                             }
-                        }
 
-                        items(
-                            items = displayedBuses,
-                            key = { bus: BusInfo -> "${bus.line}_${bus.scheduledTime}" }
-                        ) { bus: BusInfo ->
-                            BusArrivalCard(bus)
-                        }
-
-                        // Bottone "Leggi orari"
-                        if (displayedBuses.isNotEmpty()) {
-                            item(key = "speak_button") {
-                                Spacer(Modifier.height(8.dp))
-                                FilledTonalButton(
-                                    onClick = { viewModel.requestSpeak() },
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 16.dp)
-                                ) {
-                                    Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
-                                    Spacer(Modifier.width(8.dp))
-                                    Text("Leggi orari")
+                            // Filtro vocale attivo
+                            val filterLine = voiceFilter.requestedLine
+                            if (filterLine != null) {
+                                item(key = "filter_bar") {
+                                    FilterChipBar(
+                                        line = filterLine,
+                                        onClear = { viewModel.setVoiceFilter(null) }
+                                    )
                                 }
                             }
-                        }
 
-                        // Spazio in fondo per il FAB
-                        item(key = "spacer") { Spacer(Modifier.height(96.dp)) }
+                            if (displayedBuses.isEmpty()) {
+                                item(key = "empty") {
+                                    val hour = java.time.LocalTime.now().hour
+                                    val isNight = hour in 0..4 || hour >= 23
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(48.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = when {
+                                                filterLine != null -> "Nessun passaggio previsto per il $filterLine"
+                                                isNight -> "Servizio terminato\nRiprova domani mattina"
+                                                else -> "Nessun passaggio previsto"
+                                            },
+                                            style = MaterialTheme.typography.bodyLarge,
+                                            textAlign = TextAlign.Center,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+
+                            itemsIndexed(
+                                items = displayedBuses,
+                                key = { _, bus -> "${bus.line}_${bus.scheduledTime}" }
+                            ) { index, bus ->
+                                var visible by remember { mutableStateOf(false) }
+                                LaunchedEffect(Unit) {
+                                    kotlinx.coroutines.delay(index * 60L)
+                                    visible = true
+                                }
+                                AnimatedVisibility(
+                                    visible = visible,
+                                    enter = fadeIn() + slideInVertically { it / 3 }
+                                ) {
+                                    BusArrivalCard(bus, modifier = Modifier.animateItem())
+                                }
+                            }
+
+                            // Bottone "Leggi orari"
+                            if (displayedBuses.isNotEmpty()) {
+                                item(key = "speak_button") {
+                                    Spacer(Modifier.height(8.dp))
+                                    FilledTonalButton(
+                                        onClick = { viewModel.requestSpeak() },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 16.dp)
+                                    ) {
+                                        Icon(Icons.AutoMirrored.Filled.VolumeUp, contentDescription = null)
+                                        Spacer(Modifier.width(8.dp))
+                                        Text("Leggi orari")
+                                    }
+                                }
+                            }
+
+                            // Spazio in fondo per il FAB
+                            item(key = "spacer") { Spacer(Modifier.height(96.dp)) }
+                        }
                     }
                 }
             }
@@ -276,45 +316,45 @@ fun BusScreen(
 }
 
 @Composable
-fun BusArrivalCard(busInfo: BusInfo) {
+fun BusArrivalCard(busInfo: BusInfo, modifier: Modifier = Modifier) {
     val lineColor = getLineColor(busInfo.line)
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
             .shadow(
                 elevation = 2.dp,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(12.dp),
                 ambientColor = lineColor.copy(alpha = 0.1f),
                 spotColor = lineColor.copy(alpha = 0.15f)
             ),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Numero linea in cerchio colorato
             Surface(
                 shape = CircleShape,
                 color = lineColor,
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(44.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(
                         text = busInfo.line,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(Modifier.width(16.dp))
+            Spacer(Modifier.width(12.dp))
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -323,7 +363,7 @@ fun BusArrivalCard(busInfo: BusInfo) {
                         busInfo.minutesUntilArrival == 1 -> "1 minuto"
                         else -> "${busInfo.minutesUntilArrival} minuti"
                     },
-                    style = MaterialTheme.typography.headlineLarge.copy(fontSize = 32.sp),
+                    style = MaterialTheme.typography.headlineMedium.copy(fontSize = 24.sp),
                     fontWeight = FontWeight.Bold,
                     color = if (busInfo.minutesUntilArrival <= 2)
                         lineColor
@@ -331,8 +371,8 @@ fun BusArrivalCard(busInfo: BusInfo) {
                         MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Previsto alle ${busInfo.scheduledTime.substringBeforeLast(":")}",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "Previsto alle ${busInfo.scheduledTime.substringBeforeLast(":")} \u00B7 Ferm. ${busInfo.stopId}",
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
@@ -347,7 +387,7 @@ fun BusArrivalCard(busInfo: BusInfo) {
             ) {
                 Text(
                     text = if (busInfo.isRealtime) "GPS" else "Orario",
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp),
                     style = MaterialTheme.typography.labelSmall,
                     color = if (busInfo.isRealtime)
                         Color.White

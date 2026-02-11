@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.Uri
 import android.os.Environment
+import android.util.Log
 import androidx.core.content.FileProvider
 import com.redergo.buspullman.BuildConfig
 import com.redergo.buspullman.data.BusConfig
@@ -30,6 +31,8 @@ interface GitHubApiService {
 class UpdateManager(private val context: Context) {
 
     companion object {
+        private const val TAG = "UpdateManager"
+
         /** Elimina i vecchi APK BusPullman dalla cartella Downloads */
         fun cleanOldApks() {
             try {
@@ -61,28 +64,41 @@ class UpdateManager(private val context: Context) {
      */
     suspend fun checkForUpdate(): UpdateInfo? = withContext(Dispatchers.IO) {
         try {
+            val currentVersion = BuildConfig.VERSION_NAME
+            Log.d(TAG, "Check aggiornamento... versione corrente: $currentVersion")
+
             val release = api.getLatestRelease(
                 BusConfig.GITHUB_REPO_OWNER,
                 BusConfig.GITHUB_REPO_NAME
             )
 
             val latestVersion = release.tagName.removePrefix("v")
-            val currentVersion = BuildConfig.VERSION_NAME
+            Log.d(TAG, "Ultima release: $latestVersion (tag: ${release.tagName}), assets: ${release.assets.size}")
+            release.assets.forEach { asset ->
+                Log.d(TAG, "  Asset: ${asset.name}")
+            }
 
             if (isNewerVersion(latestVersion, currentVersion)) {
                 val apkAsset = release.assets.firstOrNull {
                     it.name.endsWith(".apk")
                 }
                 if (apkAsset != null) {
+                    Log.i(TAG, "Aggiornamento disponibile: $latestVersion, APK: ${apkAsset.name}")
                     UpdateInfo(
                         newVersion = latestVersion,
                         downloadUrl = apkAsset.downloadUrl,
                         releaseNotes = release.body
                     )
-                } else null
-            } else null
+                } else {
+                    Log.w(TAG, "Versione $latestVersion trovata ma nessun .apk nella release!")
+                    null
+                }
+            } else {
+                Log.d(TAG, "Già aggiornato ($currentVersion >= $latestVersion)")
+                null
+            }
         } catch (e: Exception) {
-            // Silenzioso: se il check fallisce, non mostra nulla
+            Log.e(TAG, "Check aggiornamento fallito: ${e.javaClass.simpleName}: ${e.message}", e)
             null
         }
     }

@@ -37,18 +37,18 @@ import java.time.format.DateTimeFormatter
 // Colori per linea nel widget
 private object LineColors {
     val text = mapOf(
-        "15" to ColorProvider(Color(0xFF1565C0)),
-        "68" to ColorProvider(Color(0xFFC62828)),
-        "61" to ColorProvider(Color(0xFF2E7D32))
+        "15" to ColorProvider(Color(0xFF64B5F6)),
+        "68" to ColorProvider(Color(0xFFEF5350)),
+        "61" to ColorProvider(Color(0xFF66BB6A))
     )
-    val defaultText = ColorProvider(Color(0xFF757575))
+    val defaultText = ColorProvider(Color(0xFFBDBDBD))
 
     val chipBg = mapOf(
-        "15" to ColorProvider(Color(0x301565C0)),
-        "68" to ColorProvider(Color(0x30C62828)),
-        "61" to ColorProvider(Color(0x302E7D32))
+        "15" to ColorProvider(Color(0x401565C0)),
+        "68" to ColorProvider(Color(0x40C62828)),
+        "61" to ColorProvider(Color(0x402E7D32))
     )
-    val defaultChipBg = ColorProvider(Color(0x30757575))
+    val defaultChipBg = ColorProvider(Color(0x40757575))
 }
 
 class BusWidget : GlanceAppWidget() {
@@ -71,57 +71,70 @@ class BusWidget : GlanceAppWidget() {
 
     @Composable
     private fun WidgetContent(buses: List<BusInfo>, updateTime: String) {
-        Row(
+        Column(
             modifier = GlanceModifier
                 .fillMaxSize()
-                .padding(6.dp)
                 .cornerRadius(16.dp)
-                .background(GlanceTheme.colors.background)
-                .clickable(actionStartActivity<MainActivity>()),
-            verticalAlignment = Alignment.Vertical.CenterVertically
+                .background(ColorProvider(Color(0xFF1A1C2E)))
+                .clickable(actionStartActivity<MainActivity>())
+                .padding(horizontal = 6.dp, vertical = 4.dp)
         ) {
-            if (buses.isEmpty()) {
-                Text(
-                    text = "Nessun bus",
-                    style = TextStyle(
-                        fontSize = 13.sp,
-                        color = GlanceTheme.colors.onBackground
-                    ),
-                    modifier = GlanceModifier.defaultWeight()
-                )
-            } else {
-                buses.forEach { bus ->
-                    WidgetBusChip(bus)
-                    Spacer(modifier = GlanceModifier.width(4.dp))
+            // Riga superiore: chip bus
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .defaultWeight(),
+                horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+                verticalAlignment = Alignment.Vertical.CenterVertically
+            ) {
+                if (buses.isEmpty()) {
+                    Text(
+                        text = "Nessun bus",
+                        style = TextStyle(
+                            fontSize = 12.sp,
+                            color = ColorProvider(Color(0xCCFFFFFF))
+                        )
+                    )
+                } else {
+                    buses.forEachIndexed { index, bus ->
+                        WidgetBusChip(bus)
+                        if (index < buses.size - 1) {
+                            Spacer(modifier = GlanceModifier.width(4.dp))
+                        }
+                    }
                 }
-                Spacer(modifier = GlanceModifier.defaultWeight())
             }
 
-            Column(
-                horizontalAlignment = Alignment.Horizontal.CenterHorizontally
+            // Riga inferiore: timestamp + refresh
+            Row(
+                modifier = GlanceModifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 2.dp),
+                verticalAlignment = Alignment.Vertical.CenterVertically
             ) {
+                Text(
+                    text = updateTime,
+                    style = TextStyle(
+                        fontSize = 9.sp,
+                        color = ColorProvider(Color(0x99FFFFFF))
+                    )
+                )
+                Spacer(modifier = GlanceModifier.defaultWeight())
                 Box(
                     modifier = GlanceModifier
-                        .size(32.dp)
-                        .cornerRadius(16.dp)
-                        .background(GlanceTheme.colors.primaryContainer)
+                        .size(24.dp)
+                        .cornerRadius(12.dp)
+                        .background(ColorProvider(Color(0x33FFFFFF)))
                         .clickable(actionRunCallback<RefreshWidgetAction>()),
                     contentAlignment = Alignment.Center
                 ) {
                     Image(
                         provider = ImageProvider(R.drawable.ic_refresh),
                         contentDescription = "Aggiorna",
-                        modifier = GlanceModifier.size(18.dp),
-                        colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
+                        modifier = GlanceModifier.size(14.dp),
+                        colorFilter = ColorFilter.tint(ColorProvider(Color(0xCCFFFFFF)))
                     )
                 }
-                Text(
-                    text = updateTime,
-                    style = TextStyle(
-                        fontSize = 9.sp,
-                        color = GlanceTheme.colors.onBackground
-                    )
-                )
             }
         }
     }
@@ -130,16 +143,16 @@ class BusWidget : GlanceAppWidget() {
     private fun WidgetBusChip(bus: BusInfo) {
         Column(
             modifier = GlanceModifier
-                .cornerRadius(10.dp)
+                .cornerRadius(8.dp)
                 .background(LineColors.chipBg[bus.line] ?: LineColors.defaultChipBg)
-                .padding(horizontal = 10.dp, vertical = 4.dp),
+                .padding(horizontal = 6.dp, vertical = 2.dp),
             horizontalAlignment = Alignment.Horizontal.CenterHorizontally
         ) {
             Text(
                 text = bus.line,
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
+                    fontSize = 13.sp,
                     textAlign = TextAlign.Center,
                     color = LineColors.text[bus.line] ?: LineColors.defaultText
                 )
@@ -151,9 +164,9 @@ class BusWidget : GlanceAppWidget() {
                 },
                 style = TextStyle(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
+                    fontSize = 12.sp,
                     textAlign = TextAlign.Center,
-                    color = GlanceTheme.colors.onBackground
+                    color = ColorProvider(Color(0xFFFFFFFF))
                 )
             )
         }
