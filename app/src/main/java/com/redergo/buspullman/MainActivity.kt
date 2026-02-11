@@ -66,8 +66,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        // Check aggiornamenti
+        // Check aggiornamenti + pulizia vecchi APK
         busViewModel.checkForUpdate(this)
+        UpdateManager.cleanOldApks()
 
         // Avvia refresh periodico widget
         BusWidgetWorker.enqueuePeriodicRefresh(this)
@@ -107,6 +108,16 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onResume() {
+        super.onResume()
+        busViewModel.startAutoRefresh()
+    }
+
+    override fun onPause() {
+        super.onPause()
+        busViewModel.stopAutoRefresh()
+    }
+
     private fun startSpeechRecognition() {
         if (!SpeechRecognizer.isRecognitionAvailable(this)) {
             Toast.makeText(this, "Riconoscimento vocale non disponibile", Toast.LENGTH_SHORT).show()
@@ -126,6 +137,8 @@ class MainActivity : ComponentActivity() {
                     val matches = results
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                     val spokenText = matches?.firstOrNull() ?: ""
+                    // Mostra cosa ha capito
+                    Toast.makeText(this@MainActivity, "\"$spokenText\"", Toast.LENGTH_SHORT).show()
                     handleVoiceInput(spokenText)
                 }
 

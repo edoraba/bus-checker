@@ -29,6 +29,20 @@ interface GitHubApiService {
 
 class UpdateManager(private val context: Context) {
 
+    companion object {
+        /** Elimina i vecchi APK BusPullman dalla cartella Downloads */
+        fun cleanOldApks() {
+            try {
+                val downloads = Environment.getExternalStoragePublicDirectory(
+                    Environment.DIRECTORY_DOWNLOADS
+                )
+                downloads.listFiles()?.filter {
+                    it.name.startsWith("BusPullman-") && it.name.endsWith(".apk")
+                }?.forEach { it.delete() }
+            } catch (_: Exception) { }
+        }
+    }
+
     private val api = Retrofit.Builder()
         .baseUrl(BusConfig.GITHUB_API_BASE_URL)
         .addConverterFactory(GsonConverterFactory.create())

@@ -1,8 +1,21 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+
+// Leggi password da local.properties (non committato) o env var (CI)
+val localProps = Properties().apply {
+    val f = rootProject.file("local.properties")
+    if (f.exists()) load(FileInputStream(f))
+}
+val ksPass: String = System.getenv("KEYSTORE_PASSWORD")
+    ?: localProps.getProperty("KEYSTORE_PASSWORD", "android")
+val kPass: String = System.getenv("KEY_PASSWORD")
+    ?: localProps.getProperty("KEY_PASSWORD", "android")
 
 android {
     namespace = "com.redergo.buspullman"
@@ -11,9 +24,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = file("release-keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: "buspullman2026"
+            storePassword = ksPass
             keyAlias = "buspullman"
-            keyPassword = System.getenv("KEY_PASSWORD") ?: "buspullman2026"
+            keyPassword = kPass
         }
     }
 
@@ -31,6 +44,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("release")
+        }
         release {
             isMinifyEnabled = true
             isShrinkResources = true

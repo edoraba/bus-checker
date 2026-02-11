@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.net.UnknownHostException
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
@@ -47,7 +48,6 @@ class BusViewModel : ViewModel() {
 
     init {
         loadBusData()
-        startAutoRefresh()
     }
 
     fun setContext(context: Context) {
@@ -66,9 +66,15 @@ class BusViewModel : ViewModel() {
                 // Aggiorna anche il widget
                 appContext?.let { BusWidget().updateAll(it) }
             } catch (e: Exception) {
-                _uiState.value = BusUiState.Error(
-                    message = "Errore di connessione: ${e.localizedMessage}"
-                )
+                val message = when {
+                    e is UnknownHostException || e is java.net.ConnectException ->
+                        "Nessuna connessione internet"
+                    e is java.net.SocketTimeoutException ->
+                        "Il server non risponde"
+                    else ->
+                        "Errore di connessione: ${e.localizedMessage}"
+                }
+                _uiState.value = BusUiState.Error(message = message)
             } finally {
                 _isRefreshing.value = false
             }
@@ -107,7 +113,8 @@ class BusViewModel : ViewModel() {
         _updateInfo.value = null
     }
 
-    private fun startAutoRefresh() {
+    // Lifecycle-aware: chiama da onResume
+    fun startAutoRefresh() {
         autoRefreshJob?.cancel()
         autoRefreshJob = viewModelScope.launch {
             while (true) {
@@ -115,6 +122,12 @@ class BusViewModel : ViewModel() {
                 loadBusData()
             }
         }
+    }
+
+    // Lifecycle-aware: chiama da onPause
+    fun stopAutoRefresh() {
+        autoRefreshJob?.cancel()
+        autoRefreshJob = null
     }
 
     override fun onCleared() {

@@ -220,6 +220,8 @@ fun BusScreen(
 
                         if (displayedBuses.isEmpty()) {
                             item(key = "empty") {
+                                val hour = java.time.LocalTime.now().hour
+                                val isNight = hour in 0..4 || hour >= 23
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -227,10 +229,11 @@ fun BusScreen(
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
-                                        text = if (filterLine != null)
-                                            "Nessun passaggio previsto per il $filterLine"
-                                        else
-                                            "Nessun passaggio previsto",
+                                        text = when {
+                                            filterLine != null -> "Nessun passaggio previsto per il $filterLine"
+                                            isNight -> "Servizio terminato\nRiprova domani mattina"
+                                            else -> "Nessun passaggio previsto"
+                                        },
                                         style = MaterialTheme.typography.bodyLarge,
                                         textAlign = TextAlign.Center,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant

@@ -29,6 +29,8 @@ import com.redergo.buspullman.MainActivity
 import com.redergo.buspullman.R
 import com.redergo.buspullman.data.BusInfo
 import com.redergo.buspullman.data.BusRepository
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
 class BusWidget : GlanceAppWidget() {
 
@@ -39,16 +41,17 @@ class BusWidget : GlanceAppWidget() {
         } catch (e: Exception) {
             emptyList()
         }
+        val updateTime = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))
 
         provideContent {
             GlanceTheme {
-                WidgetContent(buses)
+                WidgetContent(buses, updateTime)
             }
         }
     }
 
     @Composable
-    private fun WidgetContent(buses: List<BusInfo>) {
+    private fun WidgetContent(buses: List<BusInfo>, updateTime: String) {
         Row(
             modifier = GlanceModifier
                 .fillMaxSize()
@@ -74,20 +77,31 @@ class BusWidget : GlanceAppWidget() {
                 Spacer(modifier = GlanceModifier.defaultWeight())
             }
 
-            // Bottone refresh
-            Box(
-                modifier = GlanceModifier
-                    .size(32.dp)
-                    .cornerRadius(16.dp)
-                    .background(GlanceTheme.colors.primaryContainer)
-                    .clickable(actionRunCallback<RefreshWidgetAction>()),
-                contentAlignment = Alignment.Center
+            Column(
+                horizontalAlignment = Alignment.Horizontal.CenterHorizontally
             ) {
-                Image(
-                    provider = ImageProvider(R.drawable.ic_refresh),
-                    contentDescription = "Aggiorna",
-                    modifier = GlanceModifier.size(18.dp),
-                    colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
+                // Bottone refresh
+                Box(
+                    modifier = GlanceModifier
+                        .size(32.dp)
+                        .cornerRadius(16.dp)
+                        .background(GlanceTheme.colors.primaryContainer)
+                        .clickable(actionRunCallback<RefreshWidgetAction>()),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        provider = ImageProvider(R.drawable.ic_refresh),
+                        contentDescription = "Aggiorna",
+                        modifier = GlanceModifier.size(18.dp),
+                        colorFilter = ColorFilter.tint(GlanceTheme.colors.onPrimaryContainer)
+                    )
+                }
+                Text(
+                    text = updateTime,
+                    style = TextStyle(
+                        fontSize = 9.sp,
+                        color = GlanceTheme.colors.onBackground
+                    )
                 )
             }
         }
