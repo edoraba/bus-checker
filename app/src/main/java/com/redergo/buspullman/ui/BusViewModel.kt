@@ -76,6 +76,7 @@ class BusViewModel : ViewModel() {
     }
 
     fun onPullToRefresh() {
+        _voiceFilter.value = VoiceFilter()
         loadBusData()
     }
 

@@ -1,142 +1,71 @@
-# 🚌 BusPullman
+# BusPullman
 
 App Android privata per sapere in tempo reale quando passano i pullman GTT a Torino.
 
-## Funzionalità
+## Funzionalita
 
-- **Orari in tempo reale** per le linee 15, 68 e 61
-- **Chiedi a voce** "quando passa il 15?" e l'app ti risponde parlando
-- **Widget** sulla home screen per vedere i prossimi bus con un colpo d'occhio
-- **Aggiornamento automatico** tramite GitHub Releases
+- **Orari in tempo reale** per le linee 15, 68 e 61 dalle fermate GTT
+- **Input vocale** — chiedi "quando passa il 15?" e l'app risponde parlando
+- **Text-to-Speech** — legge gli orari in italiano
+- **Widget** compatto (2x1) per la home screen con refresh manuale
+- **Aggiornamento automatico** — rileva nuove versioni da GitHub Releases
+- **Dark mode** — supporto completo tema chiaro/scuro
 
-## Quick Start (da zero)
+## Screenshot
 
-### 1. Apri il progetto in Android Studio
-- Estrai lo zip
-- Android Studio → File → Open → seleziona la cartella `BusPullman`
-- Aspetta che Gradle finisca di sincronizzare (la prima volta ci mette un po')
-- Se ti chiede di installare SDK o componenti mancanti, accetta tutto
+L'app mostra le prossime corse con:
+- Cerchio colorato per ogni linea (15 blu, 68 rosso, 61 verde)
+- Minuti mancanti in grande
+- Badge GPS (dato reale) o Orario (programmato)
+- Bottone microfono per input vocale
 
-### 2. Verifica che compili
-- Premi ▶️ per runnare sull'emulatore o su un device fisico
-- Dovresti vedere una schermata bianca con "BusPullman - Da implementare" — è normale, il progetto è uno scheletro
+## Requisiti
 
-### 3. Crea il repo GitHub
-```bash
-cd /path/to/BusPullman
-git init
-git add .
-git commit -m "Initial project structure"
-git remote add origin git@github.com:TUO_USER/BusPullman.git
-git push -u origin main
-```
+- Android 8.0+ (API 26)
+- Connessione internet per i dati in tempo reale
 
-### 4. Apri Claude Code e sviluppa
-```bash
-cd /path/to/BusPullman
-claude
-```
-Claude Code legge automaticamente `CLAUDE.md` con tutte le specifiche.
-Per partire digli:
-> "Implementa la schermata principale seguendo CLAUDE.md, parti dal punto 1"
+## Installazione
 
-Poi prosegui con:
-> "Ora implementa il Text-to-Speech (punto 2)"
-> "Ora aggiungi lo Speech-to-Text (punto 3)"
-> "Implementa il widget (punto 4)"
-> "Aggiungi l'auto-update da GitHub (punto 5)"
-
-### 5. Testa e rilascia
-- Dopo ogni step, premi ▶️ su Android Studio per testare
-- Quando sei soddisfatto, builda la release e crea una GitHub Release:
-```bash
-./gradlew assembleRelease
-```
-- Vai su GitHub → Releases → Create new release → allega l'APK
-
----
-
-## Setup dettagliato
-
-### Prerequisiti
-- Android Studio Hedgehog (2023.1.1) o successivo
-- Android SDK 34
-- Un dispositivo Android o emulatore (min SDK 26 / Android 8.0)
-
-### Primi passi
-
-1. **Apri il progetto** in Android Studio:
-   - File → Open → seleziona la cartella `BusPullman`
-   - Aspetta che Gradle sincronizzi (può volerci qualche minuto la prima volta)
-
-2. **Crea un dispositivo virtuale** (se non ne hai uno):
-   - Tools → Device Manager → Create Virtual Device
-   - Scegli un Pixel 6 o simile con API 34
-
-3. **Run** l'app:
-   - Premi il bottone ▶️ verde
-   - L'app si installa e apre sull'emulatore/device
-
-### Sviluppo con Claude Code
-
-```bash
-cd /path/to/BusPullman
-claude
-```
-
-Claude Code leggerà automaticamente `CLAUDE.md` per capire il progetto.
-Tutte le istruzioni per lo sviluppo sono in quel file.
-
-### Build manuale
-
-```bash
-# Debug APK
-./gradlew assembleDebug
-
-# L'APK si trova in:
-# app/build/outputs/apk/debug/app-debug.apk
-```
+Scarica l'APK dall'ultima [release](https://github.com/edoraba/bus-checker/releases/latest) e installalo sul tuo dispositivo Android.
 
 ## API
 
 L'app usa l'API gratuita [GPA MadBob](https://gpa.madbob.org/) per i dati GTT:
 
-| Fermata | URL | Linee monitorate |
-|---------|-----|-----------------|
+| Fermata | URL | Linee |
+|---------|-----|-------|
 | 578 | `https://gpa.madbob.org/query.php?stop=578` | 15, 68 |
 | 1805 | `https://gpa.madbob.org/query.php?stop=1805` | 61 |
 
-## Auto-Update
+## Rilascio nuova versione
 
-L'app controlla all'avvio se esiste una nuova release su GitHub.
-Per rilasciare un aggiornamento:
+Vedi [RELEASE.md](RELEASE.md) per la guida completa.
 
-1. Aggiorna `versionCode` e `versionName` in `app/build.gradle.kts`
-2. Build: `./gradlew assembleRelease`
-3. Crea una nuova Release su GitHub con tag (es. `v1.1.0`)
-4. Allega l'APK alla release
-5. L'app lo troverà automaticamente al prossimo avvio
-
-## Struttura Progetto
-
+Rilascio rapido da Git Bash:
+```bash
+bash release.sh 1.0.3
 ```
-BusPullman/
-├── CLAUDE.md                    # Istruzioni per Claude Code
-├── README.md                    # Questo file
-├── app/
-│   ├── build.gradle.kts         # Dipendenze e config
-│   └── src/main/
-│       ├── AndroidManifest.xml
-│       └── java/com/redergo/buspullman/
-│           ├── MainActivity.kt
-│           ├── data/            # Modelli e API
-│           ├── ui/              # Schermate Compose
-│           ├── widget/          # Widget home screen
-│           └── service/         # TTS e STT
-├── build.gradle.kts             # Config root
-└── settings.gradle.kts
+
+## Build da sorgente
+
+```bash
+# Debug APK
+./gradlew assembleDebug
+# Output: app/build/outputs/apk/debug/app-debug.apk
+
+# Release APK (minificato)
+./gradlew assembleRelease
+# Output: app/build/outputs/apk/release/app-release-unsigned.apk
 ```
+
+## Stack tecnico
+
+- Kotlin + Jetpack Compose + Material 3
+- Retrofit + Gson per le API
+- Glance per il widget
+- WorkManager per il refresh periodico
+- SpeechRecognizer + TextToSpeech nativi Android
 
 ## Licenza
 
-Uso privato — non distribuire.
+Uso privato.

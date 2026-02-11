@@ -60,6 +60,9 @@ class MainActivity : ComponentActivity() {
             if (status == TextToSpeech.SUCCESS) {
                 tts?.language = Locale.ITALIAN
                 ttsReady = true
+            } else {
+                tts?.shutdown()
+                tts = null
             }
         }
 
@@ -128,6 +131,8 @@ class MainActivity : ComponentActivity() {
 
                 override fun onError(error: Int) {
                     busViewModel.setListening(false)
+                    speechRecognizer?.destroy()
+                    speechRecognizer = null
                     val msg = when (error) {
                         SpeechRecognizer.ERROR_NO_MATCH -> "Non ho capito, riprova"
                         SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "Nessun audio rilevato"
@@ -157,9 +162,9 @@ class MainActivity : ComponentActivity() {
     private fun handleVoiceInput(spokenText: String) {
         val monitoredLines = BusConfig.MONITORED_STOPS.values.flatten()
 
-        // Cerca un numero di linea monitorata nel testo
+        // Cerca un numero di linea monitorata nel testo (word boundary per evitare falsi positivi)
         val foundLine = monitoredLines.firstOrNull { line ->
-            spokenText.contains(line)
+            Regex("\\b$line\\b").containsMatchIn(spokenText)
         }
 
         busViewModel.setVoiceFilter(foundLine)
