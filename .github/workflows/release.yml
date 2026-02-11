@@ -24,11 +24,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Cache Android SDK
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/sdk
+            $ANDROID_HOME/platforms
+            $ANDROID_HOME/build-tools
+          key: android-sdk-${{ hashFiles('app/build.gradle.kts') }}
+
       - name: Build Release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: chmod +x ./gradlew && ./gradlew assembleRelease
+        run: chmod +x ./gradlew && ./gradlew assembleRelease --parallel --build-cache --no-daemon
 
       - name: Get version from tag
         id: version
